@@ -1,0 +1,47 @@
+# {{ ansible_managed }}
+
+# Deny access to files the public doesn't need
+location ~* ^.+(\.(txt|log|engine|inc|info|install|make|module|profile|test|po|sh|sql|theme|tpl(\.php)?|xtmpl))$ {
+    internal;
+}
+
+# Deny access to other PHP files
+location ~ \..*/.*\.php {
+    internal;
+}
+
+# Deny access to private and backups
+location ~* ^/sites/.*/(private|files/backup_migrate)/ {
+    access_log off;
+    return 404;
+}
+
+# Attempt to serve the request by trying direct file, directory, Drupal Controller
+location / {
+    try_files $uri $uri/ /index.php?q=$uri&$args;
+    expires max;
+}
+
+# Check: http://wiki.nginx.org/Pitfalls
+location ~* (install|update|apc|info)\.php$ {
+    auth_basic "Restricted";
+    auth_basic_user_file {{ nginx_config_dir }}/.htpasswd;
+
+    # do not cache dynamic content
+    expires off;
+
+    # php5 specific configuration options
+    include {{ nginx_config_dir }}/fastcgi_params;
+}
+
+# Below locations are for image cache
+location ~* files/styles {
+    access_log off;
+    log_not_found off;
+    expires max;
+    try_files $uri @image_rewrite;
+}
+
+location @image_rewrite {
+    rewrite ^/(.*)$ /index.php?q=$1 last;
+}

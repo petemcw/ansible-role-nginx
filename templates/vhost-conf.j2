@@ -1,0 +1,206 @@
+# {{ ansible_managed }}
+{% for key,value in item.server.iteritems() %}
+{% if key == 'redirect_urls' %}
+{% for domain in value %}
+# Domain redirection
+server {
+    listen {{ nginx_listen_port }};
+    server_name {{ domain }};
+    rewrite ^ $scheme://{{ item.server.server_name }}$request_uri?;
+}
+
+{% endfor %}
+{% endif %}
+{% if key == 'rewrites' %}
+{% for rewrite in value %}
+# URL rewrite
+server {
+    listen {{ nginx_listen_port }};
+    server_name {{ rewrite.origin }};
+    rewrite ^ $scheme://{{ rewrite.destination }}?;
+}
+
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+server {
+    # Server settings
+{% if item.server.listen_port is defined %}
+    listen {{ item.server.listen_port }};
+{% else %}
+    listen 80;
+{% endif %}
+    server_name {{ item.server.server_name }};
+
+    # Logging
+{% if nginx_cache_enabled == true %}
+    access_log /var/log/nginx/{{ item.server.server_name|replace('.', '-') }}_access.log cache;
+{% else %}
+    access_log /var/log/nginx/{{ item.server.server_name|replace('.', '-') }}_access.log main;
+{% endif %}
+    error_log  /var/log/nginx/{{ item.server.server_name|replace('.', '-') }}_error.log warn;
+    location = /robots.txt  { access_log off; log_not_found off; }
+    location = /favicon.ico { access_log off; log_not_found off; }
+
+    # Configuration
+    include /etc/nginx/conf.d/drop.conf;
+    include /etc/nginx/conf.d/assets.conf;
+{% if item.server.platform is defined and item.server.platform|lower == 'magento' %}
+    include /etc/nginx/conf.d/magento.conf;
+{% endif %}
+{% if item.server.platform is defined and item.server.platform|lower == 'drupal' %}
+    include /etc/nginx/conf.d/drupal.conf;
+{% endif %}
+{% if item.server.platform is defined and item.server.platform|lower == 'wordpress' %}
+    include /etc/nginx/conf.d/wordpress.conf;
+{% endif %}
+
+    # Pass PHP scripts to PHP-FPM daemon
+    # Check: http://wiki.nginx.org/Pitfalls
+    location ~* \.php$ {
+        # do not cache dynamic content
+        expires off;
+
+        # filter out problem conditions
+        location ~ \..*/.*\.php$ { return 404; }
+
+        # bring in parameters
+        include fastcgi_params;
+
+{% if item.server.platform is defined and item.server.platform|lower == 'magento' %}
+        # magento parameters
+{% if item.server.is_staging is defined and item.server.is_staging == true %}
+        fastcgi_param MAGE_IS_DEVELOPER_MODE 1;
+{% endif %}
+{% if item.server.magento_run_type is defined %}
+        fastcgi_param MAGE_RUN_TYPE '{{ item.server.magento_run_type }}';
+{% else %}
+        fastcgi_param MAGE_RUN_TYPE 'store';
+{% endif %}
+{% if item.server.magento_run_code is defined %}
+        fastcgi_param MAGE_RUN_CODE {{ item.server.magento_run_code }};
+{% endif %}
+
+{% endif %}
+        # send requests to Upstream
+        fastcgi_pass phpfpm;
+    }
+
+{% for key,value in item.server.iteritems() if key.find('location') != -1 %}
+    # Custom Locations
+    location {{ value.name }} {
+{% for x,y in value.iteritems() if x != 'name' %}
+        {{ x }} {{ y }};
+{% endfor %}
+    }
+
+{% endfor %}
+    # Environment
+{% if item.server.is_protected is defined and item.server.is_protected == true %}
+    auth_basic "Restricted";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+{% endif %}
+{% if item.server.is_staging is defined and item.server.is_staging == true %}
+    root /var/www/{{ item.server.application_name }}/staging/current/;
+{% else %}
+    root /var/www/{{ item.server.application_name }}/production/current/;
+{% endif %}
+    index index.php index.html index.htm;
+}
+
+{% if item.server.is_ssl is defined and item.server.is_ssl == true %}
+server {
+    # Server settings
+{% if item.server.listen_port_secure is defined %}
+    listen {{ item.server.listen_port_secure }};
+{% else %}
+    listen 443;
+{% endif %}
+    server_name {{ item.server.server_name }};
+
+    # SSL settings
+    ssl on;
+    ssl_protocols {{ nginx_ssl_protocols }};
+    ssl_ciphers {{ nginx_ssl_ciphers }};
+    ssl_prefer_server_ciphers on;
+    ssl_certificate {{ nginx_config_dir }}/ssl/{{ item.server.server_name|replace('.', '-') }}.pem;
+    ssl_certificate_key {{ nginx_config_dir }}/ssl/{{ item.server.server_name|replace('.', '-') }}.key;
+
+    # Logging
+{% if nginx_cache_enabled == true %}
+    access_log /var/log/nginx/{{ item.server.server_name|replace('.', '-') }}_access.log cache;
+{% else %}
+    access_log /var/log/nginx/{{ item.server.server_name|replace('.', '-') }}_access.log main;
+{% endif %}
+    error_log  /var/log/nginx/{{ item.server.server_name|replace('.', '-') }}_error.log warn;
+    location = /robots.txt  { access_log off; log_not_found off; }
+    location = /favicon.ico { access_log off; log_not_found off; }
+
+    # Configuration
+    include /etc/nginx/conf.d/drop.conf;
+    include /etc/nginx/conf.d/assets.conf;
+{% if item.server.platform is defined and item.server.platform|lower == 'magento' %}
+    include /etc/nginx/conf.d/magento.conf;
+{% endif %}
+{% if item.server.platform is defined and item.server.platform|lower == 'drupal' %}
+    include /etc/nginx/conf.d/drupal.conf;
+{% endif %}
+{% if item.server.platform is defined and item.server.platform|lower == 'wordpress' %}
+    include /etc/nginx/conf.d/wordpress.conf;
+{% endif %}
+
+{% for key,value in item.server.iteritems() if key.find('location') != -1 %}
+    # Custom Locations
+    location {{ value.name }} {
+{% for x,y in value.iteritems() if x != 'name' %}
+        {{ x }} {{ y }};
+{% endfor %}
+    }
+
+    # Pass PHP scripts to PHP-FPM daemon
+    # Check: http://wiki.nginx.org/Pitfalls
+    location ~* \.php$ {
+        # do not cache dynamic content
+        expires off;
+
+        # filter out problem conditions
+        location ~ \..*/.*\.php$ { return 404; }
+
+        # bring in parameters
+        include fastcgi_params;
+
+{% if item.server.platform is defined and item.server.platform|lower == 'magento' %}
+        # magento parameters
+{% if item.server.is_staging is defined and item.server.is_staging == true %}
+        fastcgi_param MAGE_IS_DEVELOPER_MODE 1;
+{% endif %}
+{% if item.server.magento_run_type is defined %}
+        fastcgi_param MAGE_RUN_TYPE {{ item.server.magento_run_type }};
+{% else %}
+        fastcgi_param MAGE_RUN_TYPE store;
+{% endif %}
+{% if item.server.magento_run_code is defined %}
+        fastcgi_param MAGE_RUN_CODE {{ item.server.magento_run_code }};
+{% endif %}
+{% endif %}
+
+        # send requests to Upstream
+        fastcgi_pass phpfpm;
+    }
+
+{% endfor %}
+    # Environment
+{% if item.server.is_protected is defined and item.server.is_protected == true %}
+    auth_basic "Restricted";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+{% endif %}
+{% if item.server.is_staging is defined and item.server.is_staging == true %}
+    root /var/www/{{ item.server.application_name }}/staging/current/;
+{% else %}
+    root /var/www/{{ item.server.application_name }}/production/current/;
+{% endif %}
+    index index.php index.html index.htm;
+}
+
+{% endif %}

@@ -1,0 +1,16 @@
+---
+# Defines variables for Debian/Ubuntu Nginx HTTP server
+
+nginx_service: 'nginx'
+nginx_config_dir: '/etc/nginx'
+nginx_user: 'www-data'
+nginx_group: 'www-data'
+nginx_packages:
+  - 'nginx'
+  - 'python-passlib'
+apache_packages:
+  - 'apache2'
+  - 'apache2.2-common'
+  - 'apache2.2-bin'
+  - 'apache2-utils'
+  - 'apache2-mpm-worker'

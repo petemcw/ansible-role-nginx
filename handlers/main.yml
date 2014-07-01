@@ -1,0 +1,24 @@
+---
+# Handlers for Nginx notifications.
+
+- name: stop nginx
+  service: >
+    name={{ nginx_service }}
+    state=stopped
+
+- name: start nginx
+  service: >
+    name={{ nginx_service }}
+    state=started
+    enabled=yes
+
+- name: restart nginx
+  service: >
+    name={{ nginx_service }}
+    state=restarted
+    enabled=yes
+
+- name: reload nginx
+  service: >
+    name={{ nginx_service }}
+    state=reloaded

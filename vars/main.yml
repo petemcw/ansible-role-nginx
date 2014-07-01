@@ -1,0 +1,4 @@
+---
+# Defines variables for Nginx HTTP server
+
+nginx_fastcgi_cache_dir: '/var/cache/nginx/fastcgi_cache'

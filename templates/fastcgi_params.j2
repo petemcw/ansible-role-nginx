@@ -1,0 +1,52 @@
+# {{ ansible_managed }}
+
+fastcgi_param QUERY_STRING        $query_string;
+fastcgi_param REQUEST_METHOD      $request_method;
+fastcgi_param CONTENT_TYPE        $content_type;
+fastcgi_param CONTENT_LENGTH      $content_length;
+
+fastcgi_param SCRIPT_FILENAME     $request_filename;
+fastcgi_param SCRIPT_NAME         $fastcgi_script_name;
+fastcgi_param REQUEST_URI         $request_uri;
+fastcgi_param DOCUMENT_URI        $document_uri;
+fastcgi_param DOCUMENT_ROOT       $document_root;
+fastcgi_param SERVER_PROTOCOL     $server_protocol;
+fastcgi_param PATH_INFO           $fastcgi_path_info;
+
+fastcgi_param GATEWAY_INTERFACE   CGI/1.1;
+fastcgi_param SERVER_SOFTWARE     nginx/$nginx_version;
+
+fastcgi_param REMOTE_ADDR         $remote_addr;
+fastcgi_param REMOTE_PORT         $remote_port;
+fastcgi_param SERVER_ADDR         $server_addr;
+fastcgi_param SERVER_PORT         $server_port;
+fastcgi_param SERVER_NAME         $server_name;
+
+fastcgi_param HTTPS               $https if_not_empty;
+
+# PHP only, required if PHP was built with --enable-force-cgi-redirect
+fastcgi_param REDIRECT_STATUS     200;
+
+fastcgi_connect_timeout           {{ nginx_fastcgi_connect_timeout }};
+fastcgi_send_timeout              {{ nginx_fastcgi_send_timeout }};
+fastcgi_read_timeout              {{ nginx_fastcgi_read_timeout }};
+
+fastcgi_buffer_size               {{ nginx_fastcgi_buffer_size }};
+fastcgi_buffers                   {{ nginx_fastcgi_buffers }};
+fastcgi_busy_buffers_size         {{ nginx_fastcgi_busy_buffers_size }};
+fastcgi_temp_file_write_size      {{ nginx_fastcgi_temp_file_write_size }};
+
+fastcgi_intercept_errors          {{ nginx_fastcgi_intercept_errors }};
+fastcgi_ignore_client_abort       {{ nginx_fastcgi_ignore_client_abort }};
+
+fastcgi_pass_header               {{ nginx_fastcgi_pass_header }};
+fastcgi_temp_path                 /var/tmp 12;
+fastcgi_split_path_info           ^(.+\.php)(/.+)$;
+fastcgi_index                     index.php;
+
+{% if nginx_cache_enabled == true %}
+# Caching
+fastcgi_cache                     DEFAULT;
+fastcgi_cache_key                 "$scheme$request_method|$http_if_modified_since|$http_if_none_match|$host|$request_uri";
+fastcgi_cache_valid               200 301 302 304 1h;
+{% endif %}

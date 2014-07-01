@@ -1,0 +1,118 @@
+---
+# The variables file used for Nginx playbooks.
+# If not overriden in inventory or as a parameter, this is the value that will be used
+
+nginx_utf8: true
+nginx_vhosts: []
+nginx_pid: '/var/run/nginx.pid'
+nginx_worker_connections: 1024
+nginx_listen_port: 80
+nginx_listen_port_secure: 443
+nginx_ssl_protocols: 'SSLv3 TLSv1'
+nginx_ssl_ciphers: 'RC4:HIGH:!aNULL:!MD5'
+nginx_gzip: true
+nginx_gzip_http_version: '1.0'
+nginx_gzip_types:
+    - 'text/plain'
+    - 'text/css'
+    - 'application/x-javascript'
+    - 'text/comma-separated-values'
+    - 'text/xml'
+    - 'application/xml'
+    - 'application/xml+rss'
+    - 'application/atom+xml'
+    - 'text/javascript'
+nginx_gzip_disable: 'MSIE [1-6].(?!.*SV1)'
+
+nginx_http_params:
+  access_log: '/var/log/nginx/access.log main'
+  error_log:  '/var/log/nginx/error.log warn'
+  sendfile: 'on'
+  tcp_nopush: 'on'
+  tcp_nodelay: 'on'
+  keepalive_timeout: 25
+  send_timeout: 30
+  server_tokens: 'off'
+  server_name_in_redirect: 'off'
+  ignore_invalid_headers: 'on'
+  recursive_error_pages: 'on'
+  merge_slashes: 'on'
+  client_max_body_size: '24m'
+  client_body_buffer_size: '128k'
+  underscores_in_headers: 'on'
+  types_hash_max_size: 2048
+  server_names_hash_bucket_size: 128
+  gzip_proxied: 'any'
+  gzip_vary: 'on'
+  gzip_static: 'on'
+  gzip_min_length: 1024
+  gzip_buffers: '32 8k'
+  gzip_comp_level: 6
+
+nginx_cache_enabled: false
+nginx_cache_open_file_cache_max: 10000
+nginx_cache_open_file_cache_inactive: '30m'
+nginx_cache_open_file_cache_valid: '10m'
+nginx_cache_open_file_cache_min_uses: 2
+nginx_cache_open_file_cache_errors: 'on'
+nginx_cache_proxy_read_timeout: 60
+
+nginx_fastcgi_cache_levels: '1:2'
+nginx_fastcgi_cache_keys_zone: 'DEFAULT:16m'
+nginx_fastcgi_cache_max_size: '1g'
+nginx_fastcgi_cache_inactive: '10h'
+
+nginx_fastcgi_use_socket: true
+nginx_fastcgi_socket: '/var/run/phpfpm.sock'
+nginx_fastcgi_listen_tcp: '127.0.0.1:9000'
+nginx_fastcgi_connect_timeout: 60
+nginx_fastcgi_send_timeout: 60
+nginx_fastcgi_read_timeout: 60
+nginx_fastcgi_buffer_size: '4k'
+nginx_fastcgi_buffers: '512 4k'
+nginx_fastcgi_busy_buffers_size: '8k'
+nginx_fastcgi_temp_file_write_size: '256k'
+nginx_fastcgi_intercept_errors: 'off'
+nginx_fastcgi_ignore_client_abort: 'off'
+nginx_fastcgi_pass_header: '*'
+
+nginx_asset_extensions:
+  - 'ogg'
+  - 'ogv'
+  - 'svg'
+  - 'svgz'
+  - 'eot'
+  - 'otf'
+  - 'woff'
+  - 'mp4'
+  - 'ttf'
+  - 'rss'
+  - 'atom'
+  - 'jpe?g'
+  - 'gif'
+  - 'png'
+  - 'ico'
+  - 'zip'
+  - 'pdf'
+  - 't?gz'
+  - 'gz'
+  - 'rar'
+  - 'bz2'
+  - 'doc'
+  - 'xls'
+  - 'exe'
+  - 'ppt'
+  - 'tar'
+  - 'mid'
+  - 'midi'
+  - 'wav'
+  - 'swf'
+  - 'bmp'
+  - 'txt'
+  - 'rtf'
+  - 'md'
+nginx_drop_extensions:
+  - 'aspx'
+  - 'asp'
+  - 'jsp'
+  - 'cgi'
