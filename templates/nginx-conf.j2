@@ -32,7 +32,7 @@ http {
     log_format main  '$remote_addr - $remote_user [$time_local] $request '
                      '"$status" $body_bytes_sent "$http_referer" '
                      '"$http_user_agent" "$http_x_forwarded_for"';
-{% if nginx_cache_enabled == true %}
+{% if nginx_cache_enabled|bool == true %}
 
     log_format cache '***$time_local '
                      'Cache Status: "$upstream_cache_status" '
@@ -46,7 +46,7 @@ http {
 {% endif %}
 
     # compression
-{% if nginx_gzip == true %}
+{% if nginx_gzip|bool == true %}
     gzip on;
 {% else %}
     gzip off;
@@ -60,7 +60,7 @@ http {
     {{ k }} {{ v }};
 {% endfor %}
 
-{% if nginx_cache_enabled == true %}
+{% if nginx_cache_enabled|bool == true %}
     # caching
     open_file_cache max={{ nginx_cache_open_file_cache_max }} inactive={{ nginx_cache_open_file_cache_inactive }};
     open_file_cache_valid {{ nginx_cache_open_file_cache_valid }};
@@ -72,7 +72,7 @@ http {
 
     # PHP-FPM
     upstream phpfpm {
-{% if nginx_fastcgi_use_socket %}
+{% if nginx_fastcgi_use_socket|bool == true %}
       server unix:{{ nginx_fastcgi_socket }};
 {% else %}
       server {{ nginx_fastcgi_listen_tcp }};
