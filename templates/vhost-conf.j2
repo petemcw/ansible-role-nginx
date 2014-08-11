@@ -95,6 +95,14 @@ server {
         fastcgi_pass phpfpm;
     }
 
+{% for key,value in item.server.iteritems() if key.find('location') != -1 %}
+    # Custom Locations
+    location {{ value[0].name }} {
+{% for x,y in value[0].iteritems() if x != 'name' %}
+        {{ x }} {{ y }};
+{% endfor %}
+    }
+
 {% endfor %}
     # Environment
 {% if item.server.is_protected is defined and item.server.is_protected|bool == true %}
