@@ -103,8 +103,10 @@ nginx_htpasswd_users:
 nginx_vhosts:
   - server:
     platform: 'magento'             # Currently supported: magento, drupal, wordpress
+    platform_subdir:                # If defined, attempts to write correct location blocks
     magento_run_type: 'store'       # Currently supported: website, store
     magento_run_code: 'base'        # User generated website/store code
+    magento_developer_mode: true    # Enable Magento development features
     server_name: 'www.example.com'  # Used to determine which server block is used for a given request
     application_name: 'example.com' # Used to create correct file system path and virtual host file
     listen_port: 80
@@ -187,6 +189,10 @@ nginx_vhosts:
 
 ## Dependencies
 
+The following packages may be required for Debian derivatives:
+
+- `aptitude`
+- `python-apt`
 - `python-passlib`
 
 ## License
