@@ -63,7 +63,7 @@ nginx_fastcgi_cache_max_size: '1g'
 nginx_fastcgi_cache_inactive: '10h'
 
 nginx_fastcgi_use_socket: true
-nginx_fastcgi_socket: '/var/run/phpfpm.sock'
+nginx_fastcgi_socket: '/var/run/php5-fpm.sock'
 nginx_fastcgi_listen_tcp: '127.0.0.1:9000'
 nginx_fastcgi_connect_timeout: 60
 nginx_fastcgi_send_timeout: 60

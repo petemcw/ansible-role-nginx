@@ -65,7 +65,7 @@ nginx_cache_enabled: false
 
 # Defines the address and other parameters of an upstream server.
 nginx_fastcgi_use_socket: true
-nginx_fastcgi_socket: '/var/run/phpfpm.sock'
+nginx_fastcgi_socket: '/var/run/php5-fpm.sock'
 nginx_fastcgi_listen_tcp: '127.0.0.1:9000'
 
 # Extensions that should be served as static assets
