@@ -78,7 +78,7 @@
 
 - name: Write vhost configuration templates
   template: >
-    src={% if item['server']['platform'] is defined %}platform-{{ item['server']['platform'] }}-conf.j2{% else %}vhost-conf.j2{% endif %}
+    src={% if item['server']['platform'] is defined %}platform-conf.j2{% else %}vhost-conf.j2{% endif %}
     dest={{ nginx_config_dir }}/sites-available/{{ item['server']['server_name']|replace('.', '-') }}.conf
     mode=0644 owner=root group=root
     backup=yes
@@ -101,16 +101,16 @@
   tags:
     - nginx
 
-- name: Enable platform cron job
-  cron: >
-    name="Run Magento tasks"
-    minute="*/6"
-    job="/usr/bin/php /var/www/{{ item['server']['application_name'] }}/production/current/cron.php"
-  with_items: nginx_vhosts
-  when: >
-    nginx_vhosts|lower != 'none' and item['server']['is_staging']|bool == false and item['server']['platform'] is defined and item['server']['platform'] == 'magento'
-  tags:
-    - nginx
+# - name: Enable platform cron job
+#   cron: >
+#     name="Run Magento tasks"
+#     minute="*/6"
+#     job="/usr/bin/php /var/www/{{ item['server']['application_name'] }}/production/current/cron.php"
+#   with_items: nginx_vhosts
+#   when: >
+#     nginx_vhosts|lower != 'none' and item['server']['is_staging']|bool == false and item['server']['platform'] is defined and item['server']['platform'] == 'magento'
+#   tags:
+#     - nginx
 
 - name: Create a basic auth users
   htpasswd: >

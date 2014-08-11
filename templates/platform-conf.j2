@@ -1,0 +1,172 @@
+{% extends "vhost-conf.j2" %}
+{% block platform %}
+{% for key,value in item.server.iteritems() %}
+{% if key == 'platform' %}
+{% for platform in value %}
+{% if platform.subdir is defined and platform.subdir|lower != 'none' %}
+{% set location_dir = platform.subdir %}
+{% else %}
+{% set location_dir = '' %}
+{% endif %}
+{% if platform.name|lower == 'cmsms' %}
+
+    ###
+    #
+    # START CMSMS CONFIGURATION
+    #
+    ###
+
+    # Attempted to match last if rules below fail.
+    # http://wiki.nginx.org/HttpCoreModule
+    location /{{ location_dir }} {
+        try_files $uri $uri/ /{{ location_dir }}index.php?page=$request_uri;
+        expires max;
+    }
+
+    ###
+    #
+    # END CMSMS CONFIGURATION
+    #
+    ###
+
+{% endif %}
+{% if platform.name|lower == 'drupal' %}
+
+    ###
+    #
+    # START DRUPAL CONFIGURATION
+    #
+    ###
+
+    # Deny access to files the public doesn't need
+    location ~* ^.+(\.(txt|log|engine|inc|info|install|make|module|profile|test|po|sh|sql|theme|tpl(\.php)?|xtmpl))$ {
+        internal;
+    }
+
+    # Deny access to other PHP files
+    location ~ \..*/.*\.php {
+        internal;
+    }
+
+    # Deny access to private and backups
+    location ~* ^/{{ location_dir }}sites/.*/(private|files/backup_migrate)/ {
+        access_log off;
+        return 404;
+    }
+
+    # Attempt to serve the request by trying direct file, directory, Drupal Controller
+    location /{{ location_dir }} {
+        try_files $uri $uri/ /{{ location_dir }}index.php?q=$uri&$args;
+        expires max;
+    }
+
+    # Check: http://wiki.nginx.org/Pitfalls
+    location ~* (install|update|apc|info)\.php$ {
+        auth_basic "Restricted";
+        auth_basic_user_file {{ nginx_config_dir }}/.htpasswd;
+
+        # do not cache dynamic content
+        expires off;
+
+        # php5 specific configuration options
+        include {{ nginx_config_dir }}/fastcgi_params;
+    }
+
+    # Below locations are for image cache
+    location ~* files/styles {
+        access_log off;
+        log_not_found off;
+        expires max;
+        try_files $uri @image_rewrite;
+    }
+
+    location @image_rewrite {
+        rewrite ^/(.*)$ /{{ location_dir }}index.php?q=$1;
+    }
+
+    ###
+    #
+    # END DRUPAL CONFIGURATION
+    #
+    ###
+
+{% endif %}
+{% if platform.name|lower == 'magento' %}
+
+    ###
+    #
+    # START MAGENTO CONFIGURATION
+    #
+    ###
+
+    # Deny access to files the public doesn't need
+    location ^~ /(app|config|includes|lib|media/customer|media/downloadable|pkginfo|report/config.xml|shell|var)/ {
+        internal;
+    }
+
+    # Restrict access to admins
+    location /{{ location_dir }}var/export {
+        auth_basic "Restricted";
+        auth_basic_user_file {{ nginx_config_dir }}/.htpasswd;
+        autoindex on;
+    }
+
+    # Attempt to serve the request by trying direct file, directory, Magento controller
+    location /{{ location_dir }} {
+        try_files $uri $uri/ /{{ location_dir }}index.php?$args;
+        expires max;
+    }
+
+    # The downloader has its own index.php that needs to be used
+    location ~* ^(/downloader)(.*) {
+        try_files $uri $uri/ /{{ location_dir }}downloader/index.php$1;
+    }
+
+    # REST API endpoint
+    location /{{ location_dir }}api {
+        rewrite ^/{{ location_dir }}api/rest /{{ location_dir }}api.php?type=rest last;
+    }
+
+    ###
+    #
+    # END MAGENTO CONFIGURATION
+    #
+    ###
+
+{% endif %}
+{% if platform.name|lower == 'wordpress' %}
+
+    ###
+    #
+    # START WORDPRESS CONFIGURATION
+    #
+    ###
+
+    # Deny access to any files with a .php extension in the uploads directory
+    # Works in sub-directory installs and also in multisite network
+    # Keep logging the requests to parse later (or to pass to firewall utilities such as fail2ban)
+    location ~* /{{ location_dir }}(?:uploads|files)/.*\.php$ {
+        deny all;
+    }
+
+    # Attempted to match last if rules below fail.
+    # http://wiki.nginx.org/HttpCoreModule
+    location /{{ location_dir }} {
+        try_files $uri $uri/ /{{ location_dir }}index.php?$args;
+        expires max;
+    }
+
+    # Add trailing slash to */wp-admin requests.
+    rewrite /{{ location_dir }}wp-admin$ $scheme://$host$uri/ permanent;
+
+    ###
+    #
+    # END WORDPRESS CONFIGURATION
+    #
+    ###
+
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endblock %}

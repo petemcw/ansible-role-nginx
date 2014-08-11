@@ -102,8 +102,10 @@ nginx_htpasswd_users:
 # The list of user accounts to be added to the system
 nginx_vhosts:
   - server:
-    platform: 'magento'             # Currently supported: magento, drupal, wordpress
-    platform_subdir:                # If defined, attempts to write correct location blocks
+    platform:
+      - name: 'magento'             # Currently supported: magento, drupal, wordpress, cmsms
+      - name: 'wordpress'
+        subdir: 'blog/'             # If defined, attempts to write correct location blocks
     magento_run_type: 'store'       # Currently supported: website, store
     magento_run_code: 'base'        # User generated website/store code
     magento_developer_mode: true    # Enable Magento development features
@@ -121,7 +123,8 @@ nginx_vhosts:
       - origin: 'www.example.com/old-page.html'
         destination: 'www.example.com/contact-us'
   - server:
-    platform: 'drupal'
+    platform:
+      - name: 'drupal'
     server_name: 'example.io'
     application_name: 'example.io'
     is_staging: true
@@ -166,7 +169,8 @@ nginx_vhosts:
             nginx_http_params: { keepalive_timeout: 15 },
             nginx_vhosts:
                 - server:
-                  platform: 'magento'
+                  platform:
+                    - name: 'magento'
                   magento_run_type: 'store'
                   magento_run_code: 'base'
                   server_name: 'www.augustash.com'
