@@ -40,15 +40,14 @@ server {
 {% else %}
     listen 443;
 {% endif %}
-    server_name {{ item.server.server_name }};
 
-    # SSL settings
     ssl on;
     ssl_protocols {{ nginx_ssl_protocols }};
     ssl_ciphers {{ nginx_ssl_ciphers }};
     ssl_prefer_server_ciphers on;
     ssl_certificate {{ nginx_config_dir }}/ssl/{{ item.server.server_name|replace('.', '-') }}.pem;
     ssl_certificate_key {{ nginx_config_dir }}/ssl/{{ item.server.server_name|replace('.', '-') }}.key;
+{% endif %}
 
     # Logging
 {% if nginx_cache_enabled|bool == true %}
@@ -63,23 +62,7 @@ server {
     # Configuration
     include /etc/nginx/conf.d/drop.conf;
     include /etc/nginx/conf.d/assets.conf;
-{% if item.server.platform is defined and item.server.platform|lower == 'magento' %}
-    include /etc/nginx/conf.d/magento.conf;
-{% endif %}
-{% if item.server.platform is defined and item.server.platform|lower == 'drupal' %}
-    include /etc/nginx/conf.d/drupal.conf;
-{% endif %}
-{% if item.server.platform is defined and item.server.platform|lower == 'wordpress' %}
-    include /etc/nginx/conf.d/wordpress.conf;
-{% endif %}
-
-{% for key,value in item.server.iteritems() if key.find('location') != -1 %}
-    # Custom Locations
-    location {{ value.name }} {
-{% for x,y in value.iteritems() if x != 'name' %}
-        {{ x }} {{ y }};
-{% endfor %}
-    }
+{% block platform %}{% endblock %}
 
     # Pass PHP scripts to PHP-FPM daemon
     # Check: http://wiki.nginx.org/Pitfalls

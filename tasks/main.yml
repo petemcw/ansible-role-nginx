@@ -55,6 +55,7 @@
     - '{{ nginx_config_dir }}/sites-enabled/default'
     - '{{ nginx_config_dir }}/sites-available/default'
     - '/var/www/index.html'
+    - '/var/www/html'
   when: ansible_os_family == 'Debian'
   tags:
     - nginx
@@ -70,9 +71,6 @@
       - { src: 'fastcgi_params.j2',           dest: '{{ nginx_config_dir }}/fastcgi_params' }
       - { src: 'conf-d-drop-conf.j2',         dest: '{{ nginx_config_dir }}/conf.d/drop.conf' }
       - { src: 'conf-d-assets-conf.j2',       dest: '{{ nginx_config_dir }}/conf.d/assets.conf' }
-      - { src: 'platforms/magento-conf.j2',   dest: '{{ nginx_config_dir }}/conf.d/magento.conf' }
-      - { src: 'platforms/drupal-conf.j2',    dest: '{{ nginx_config_dir }}/conf.d/drupal.conf' }
-      - { src: 'platforms/wordpress-conf.j2', dest: '{{ nginx_config_dir }}/conf.d/wordpress.conf' }
   notify:
     - restart nginx
   tags:
@@ -80,7 +78,7 @@
 
 - name: Write vhost configuration templates
   template: >
-    src=vhost-conf.j2
+    src={% if item['server']['platform'] is defined %}platform-{{ item['server']['platform'] }}-conf.j2{% else %}vhost-conf.j2{% endif %}
     dest={{ nginx_config_dir }}/sites-available/{{ item['server']['server_name']|replace('.', '-') }}.conf
     mode=0644 owner=root group=root
     backup=yes

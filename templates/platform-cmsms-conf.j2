@@ -1,0 +1,28 @@
+{% extends "vhost-conf.j2" %}
+{% block platform %}
+{% if item.server.platform_subdir is defined and item.server.platform_subdir|lower != 'none' %}
+{% set location_dir = item.server.platform_subdir %}
+{% else %}
+{% set location_dir = '' %}
+{% endif %}
+
+    ###
+    #
+    # START CMSMS CONFIGURATION
+    #
+    ###
+
+    # Attempted to match last if rules below fail.
+    # http://wiki.nginx.org/HttpCoreModule
+    location /{{ location_dir }} {
+        try_files $uri $uri/ /{{ location_dir }}index.php?page=$request_uri;
+        expires max;
+    }
+
+    ###
+    #
+    # END CMSMS CONFIGURATION
+    #
+    ###
+
+{% endblock %}
