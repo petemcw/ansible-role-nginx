@@ -79,11 +79,6 @@ http {
 {% endif %}
     }
 
-    # include common configuration
-    include {{ nginx_config_dir }}/conf.d/drop.conf;
-    include {{ nginx_config_dir }}/conf.d/fcgi.conf;
-    include {{ nginx_config_dir }}/conf.d/assets.conf;
-
     # include active sites
     include {{ nginx_config_dir }}/sites-enabled/*;
 }
