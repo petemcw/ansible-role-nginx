@@ -60,8 +60,15 @@ server {
     location = /favicon.ico { access_log off; log_not_found off; }
 
     # Configuration
-    include /etc/nginx/conf.d/drop.conf;
-    include /etc/nginx/conf.d/assets.conf;
+{% for key,value in item.server.iteritems() if key.find('location') != -1 %}
+    # Custom Locations
+    location {{ value[0].name }} {
+{% for x,y in value[0].iteritems() if x != 'name' %}
+        {{ x }} {{ y }};
+{% endfor %}
+    }
+
+{% endfor %}
 {% block platform %}{% endblock %}
 
     # Pass PHP scripts to PHP-FPM daemon
@@ -94,16 +101,9 @@ server {
         # send requests to Upstream
         fastcgi_pass phpfpm;
     }
+    include /etc/nginx/conf.d/drop.conf;
+    include /etc/nginx/conf.d/assets.conf;
 
-{% for key,value in item.server.iteritems() if key.find('location') != -1 %}
-    # Custom Locations
-    location {{ value[0].name }} {
-{% for x,y in value[0].iteritems() if x != 'name' %}
-        {{ x }} {{ y }};
-{% endfor %}
-    }
-
-{% endfor %}
     # Environment
 {% if item.server.is_protected is defined and item.server.is_protected|bool == true %}
     auth_basic "Restricted";
