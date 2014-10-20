@@ -141,7 +141,7 @@ nginx_vhosts:
 
 1) Install Nginx with HTTP directives of choice, but with no vhosts configured:
 
-    ```yaml
+```yaml
     ---
     # This playbook installs Nginx
 
@@ -152,13 +152,13 @@ nginx_vhosts:
             access_log: "/var/log/nginx/access.log",
             nginx_vhosts: none
           }
-    ```
+```
 
 *Note: Please make sure the HTTP directives passed are valid, as this role won't check for the validity of the directives. See the [nginx documentation](http://nginx.org/en/docs/) for details.*
 
 2) Install Nginx and configure a vhost:
 
-    ```yaml
+```yaml
     ---
     # This playbook installs Nginx
 
@@ -189,7 +189,7 @@ nginx_vhosts:
                   location1: {name: /foo/, try_files: "$uri $uri/ /index.html"}
                   location2: {name: /bar/, try_files: "$uri $uri/ /index.html"}
           }
-    ```
+```
 
 ## Dependencies
 
