@@ -100,7 +100,7 @@
     ###
 
     # Deny access to files the public doesn't need
-    location ^~ /(app|config|includes|lib|media/customer|media/downloadable|pkginfo|report/config.xml|shell|var)/ {
+    location ^~ /{{ location_dir }}(app|config|includes|lib|media/customer|media/downloadable|pkginfo|report/config.xml|shell|var)/ {
         internal;
     }
 
@@ -118,13 +118,15 @@
     }
 
     # The downloader has its own index.php that needs to be used
-    location ~* ^(/downloader)(.*) {
+    location ~* ^(/{{ location_dir }}downloader)(.*) {
         try_files $uri $uri/ /{{ location_dir }}downloader/index.php$1;
     }
 
     # REST API endpoint
     location /{{ location_dir }}api {
         rewrite ^/{{ location_dir }}api/rest /{{ location_dir }}api.php?type=rest last;
+        rewrite ^/{{ location_dir }}api/v2_soap /{{ location_dir }}api.php?type=v2_soap last;
+        rewrite ^/{{ location_dir }}api/soap /{{ location_dir }}api.php?type=soap last;
     }
 
     ###
