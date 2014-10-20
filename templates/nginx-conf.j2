@@ -70,6 +70,12 @@ http {
     fastcgi_cache_path /var/cache/nginx/fastcgi_cache levels={{ nginx_fastcgi_cache_levels }} keys_zone={{ nginx_fastcgi_cache_keys_zone }} max_size={{ nginx_fastcgi_cache_max_size }} inactive={{ nginx_fastcgi_cache_inactive }};
 {% endif %}
 
+    # detect https
+    map $scheme $fastcgi_https {
+      default "";
+      https on;
+    }
+
     # PHP-FPM
     upstream phpfpm {
 {% if nginx_fastcgi_use_socket|bool == true %}

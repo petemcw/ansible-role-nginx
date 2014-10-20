@@ -36,9 +36,9 @@ server {
 {% if item.server.is_ssl is defined and item.server.is_ssl|bool == true %}
     # SSL
 {% if item.server.listen_port_secure is defined %}
-    listen {{ item.server.listen_port_secure }};
+    listen {{ item.server.listen_port_secure }} ssl;
 {% else %}
-    listen 443;
+    listen 443 ssl;
 {% endif %}
 
     ssl on;

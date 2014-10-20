@@ -8,7 +8,7 @@ nginx_pid: '/var/run/nginx.pid'
 nginx_worker_connections: 1024
 nginx_listen_port: 80
 nginx_listen_port_secure: 443
-nginx_ssl_protocols: 'SSLv3 TLSv1'
+nginx_ssl_protocols: 'SSLv3 TLSv1 TLSv1.1 TLSv1.2'
 nginx_ssl_ciphers: 'RC4:HIGH:!aNULL:!MD5'
 nginx_gzip: true
 nginx_gzip_http_version: '1.0'
