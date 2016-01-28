@@ -95,9 +95,18 @@
     state=directory
     mode=0755 owner={{ deploy_user }} group={{ deploy_user }}
   with_items: nginx_vhosts
-  when: nginx_vhosts|lower != 'none'
+  when: nginx_vhosts is defined and nginx_vhosts|lower != 'none'
   notify:
     - reload nginx
+  tags:
+    - nginx
+
+- name: Write log rotation template
+  template: >
+    src=logrotate-d-nginx.j2
+    dest=/etc/logrotate.d/nginx
+    mode=0644 owner=root group=root
+    backup=yes
   tags:
     - nginx
 
