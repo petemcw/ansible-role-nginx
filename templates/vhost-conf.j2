@@ -44,9 +44,28 @@ server {
     ssl_protocols {{ nginx_ssl_protocols }};
     ssl_ciphers {{ nginx_ssl_ciphers }};
     ssl_prefer_server_ciphers on;
+    ssl_session_cache {{ nginx_ssl_session_cache }};
     ssl_certificate {{ nginx_config_dir }}/ssl/{{ item.server.server_name|replace('.', '-') }}.pem;
     ssl_certificate_key {{ nginx_config_dir }}/ssl/{{ item.server.server_name|replace('.', '-') }}.key;
+{% if nginx_ssl_dhparam is defined %}
+    ssl_dhparam {{ nginx_ssl_dhparam }};
 {% endif %}
+{% endif %}
+
+    # Android dupe request bug
+    # https://www.byte.nl/blog/android-bug-can-kill-site-duplicate-requests
+    set $request_url "$scheme://$http_host$request_uri";
+    if ($request_url = $http_referer) {
+       set $request_is_referer 1;
+    }
+    if ($http_user_agent ~ 'Android ([23]|4\.[0123])') {
+        set $android_buggy_ua 1;
+    }
+    set $android_dupe_bug "${request_method}${android_buggy_ua}${request_is_referer}";
+    if ($android_dupe_bug = 'GET11') {
+        # http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+        return 429;
+    }
 
     # Logging
 {% if nginx_cache_enabled|bool == true %}
@@ -100,8 +119,8 @@ server {
         # send requests to Upstream
         fastcgi_pass phpfpm;
     }
-    include /etc/nginx/conf.d/drop.conf;
-    include /etc/nginx/conf.d/assets.conf;
+    include {{ nginx_config_dir }}/conf.d/drop.conf;
+    include {{ nginx_config_dir }}/conf.d/assets.conf;
 
     # Environment
 {% if item.server.is_protected is defined and item.server.is_protected|bool == true %}
@@ -113,5 +132,10 @@ server {
 {% else %}
     root /var/www/{{ item.server.application_name }}/production/current/;
 {% endif %}
+
+{% if item.server.index is defined %}
+    index {{ item.server.index }};
+{% else %}
     index index.php index.html index.htm;
+{% endif %}
 }

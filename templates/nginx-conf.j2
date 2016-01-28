@@ -1,4 +1,7 @@
 # {{ ansible_managed }}
+#
+# https://gist.github.com/gwillem/cd5ae6845fa33aa0d481
+#
 #----------------------------------------------------------------------
 #  http://wiki.nginx.org/NginxMainModule
 #----------------------------------------------------------------------
@@ -26,7 +29,7 @@ events {
 # http://wiki.nginx.org/NginxHttpCoreModule
 #----------------------------------------------------------------------
 http {
-    include mime.types;
+    include {{ nginx_config_dir }}/mime.types;
     default_type application/octet-stream;
 
     log_format main  '$remote_addr - $remote_user [$time_local] $request '
@@ -60,6 +63,13 @@ http {
     {{ k }} {{ v }};
 {% endfor %}
 
+    # GeoIP support is included in the Ubuntu 12.04 Nginx.
+    # This enables logging, and the following:
+    #    if ($geoip_country_code ~ (CN|ZW) ) {
+    #      return 403;
+    #    }
+    #geoip_country /usr/share/GeoIP/GeoIP.dat;
+
 {% if nginx_cache_enabled|bool == true %}
     # caching
     open_file_cache max={{ nginx_cache_open_file_cache_max }} inactive={{ nginx_cache_open_file_cache_inactive }};
@@ -67,7 +77,7 @@ http {
     open_file_cache_min_uses {{ nginx_cache_open_file_cache_min_uses }};
     open_file_cache_errors {{ nginx_cache_open_file_cache_errors }};
     proxy_read_timeout {{ nginx_cache_proxy_read_timeout }};
-    fastcgi_cache_path /var/cache/nginx/fastcgi_cache levels={{ nginx_fastcgi_cache_levels }} keys_zone={{ nginx_fastcgi_cache_keys_zone }} max_size={{ nginx_fastcgi_cache_max_size }} inactive={{ nginx_fastcgi_cache_inactive }};
+    fastcgi_cache_path {{ nginx_fastcgi_cache_dir }} levels={{ nginx_fastcgi_cache_levels }} keys_zone={{ nginx_fastcgi_cache_keys_zone }} max_size={{ nginx_fastcgi_cache_max_size }} inactive={{ nginx_fastcgi_cache_inactive }};
 {% endif %}
 
     # detect https
@@ -75,6 +85,18 @@ http {
       default "";
       https on;
     }
+
+    # detect whether a request comes from a human, a search crawler or another bot.
+    map $http_user_agent $is_non_search_bot {
+        default '';
+        ~*(google|bing|pingdom|monitis.com|Zend_Http_Client) '';
+        ~*(http|crawler|spider|bot|search|ForusP|Wget/|Python-urllib|PHPCrawl|bGenius) 'bot';
+    }
+
+    # rate limit bots (that are not search spiders) to one PHP request per second.
+    # An empty '$limit_bots' would disable rate limiting for this request
+    limit_req_zone $is_non_search_bot zone=bots:1m rate=1r/s;
+    limit_req_log_level error;
 
     # PHP-FPM
     upstream phpfpm {

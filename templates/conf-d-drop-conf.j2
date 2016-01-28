@@ -7,10 +7,16 @@ location ~ ^/(favicon.ico|robots.txt) {
 }
 
 # Deny access to hidden files
-location /. {
+location ~ /\. {
     access_log off;
     log_not_found off;
     return 404;
+}
+
+# Don't skip .thumbs, this is a default directory where Magento places thumbnails
+# Nginx cannot "not" match something, instead the target is matched with an empty block
+# http://stackoverflow.com/a/16304073
+location ~ /\.thumbs {
 }
 
 {% if nginx_drop_extensions %}

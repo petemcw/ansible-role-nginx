@@ -5,11 +5,14 @@
 nginx_utf8: true
 nginx_vhosts: []
 nginx_pid: '/var/run/nginx.pid'
-nginx_worker_connections: 1024
+nginx_worker_connections: 768
 nginx_listen_port: 80
 nginx_listen_port_secure: 443
 nginx_ssl_protocols: 'TLSv1 TLSv1.1 TLSv1.2'
-nginx_ssl_ciphers: 'RC4:HIGH:!aNULL:!MD5'
+nginx_ssl_ciphers: 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH'
+nginx_ssl_session_cache: 'shared:SSL:10m'
+nginx_ssl_prefer_server_ciphers: 'on'
+# nginx_ssl_dhparam:
 nginx_gzip: true
 nginx_gzip_http_version: '1.0'
 nginx_gzip_types:
@@ -30,14 +33,14 @@ nginx_http_params:
   sendfile: 'on'
   tcp_nopush: 'on'
   tcp_nodelay: 'on'
-  keepalive_timeout: 25
+  keepalive_timeout: 65
   send_timeout: 30
   server_tokens: 'off'
   server_name_in_redirect: 'off'
   ignore_invalid_headers: 'on'
   recursive_error_pages: 'on'
   merge_slashes: 'on'
-  client_max_body_size: '24m'
+  client_max_body_size: '75m'
   client_body_buffer_size: '128k'
   underscores_in_headers: 'on'
   types_hash_max_size: 2048
