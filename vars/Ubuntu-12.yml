@@ -1,5 +1,5 @@
 ---
-# Defines variables for Debian/Ubuntu
+# Defines variables for Ubuntu 12.04
 
 nginx_user: www-data
 nginx_service: nginx
@@ -11,6 +11,7 @@ nginx_default_files:
 nginx_pid: /run/nginx.pid
 nginx_packages:
   - nginx
+  - python-passlib
 apache_packages:
   - apache2
   - apache2.2-common

@@ -1,41 +1,39 @@
 ---
-# Defines tasks to install and configure Nginx webserver
+# Defines tasks to install and configure Nginx
 
-- name: Include the OS specific varibles
-  include_vars: '{{ ansible_os_family }}.yml'
+- name: Gather OS specific varibles
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
   tags:
     - nginx
 
-- name: Remove Apache packages for Debian derivatives
-  apt: >
-    pkg={{ item }}
+- include: "Ubuntu/install.yml"
+  when: ansible_distribution == "Ubuntu"
+  tags:
+    - nginx
+
+- include: "{{ ansible_os_family }}/install.yml"
+  static: no
+  tags:
+    - nginx
+
+- name: Remove default files
+  file: >
+    path="{{ item }}"
     state=absent
-    purge=yes
-  with_items: "{{apache_packages}}"
-  when: ansible_os_family == 'Debian'
-  tags:
-    - nginx
-
-- name: Add PPA repository for Debian derivatives
-  apt_repository: >
-    repo='ppa:nginx/stable'
-  when: ansible_os_family == 'Debian'
-  tags:
-    - nginx
-
-- name: Install packages for Debian derivatives
-  apt: >
-    pkg={{ item }}
-    update_cache=yes
-    state=latest
-  with_items: "{{nginx_packages}}"
-  when: ansible_os_family == 'Debian'
+  with_items: "{{ nginx_default_files }}"
+  when: nginx_remove_default_files
+  notify:
+    - restart nginx
   tags:
     - nginx
 
 - name: Ensure proper directories exist
   file: >
-    path={{ item }}
+    path="{{ item }}"
     state=directory
     mode=0755 owner=root group=root
   with_items:
@@ -43,100 +41,43 @@
     - '{{ nginx_config_dir }}/conf.d'
     - '{{ nginx_config_dir }}/sites-enabled'
     - '{{ nginx_config_dir }}/sites-available'
-    - '{{ nginx_fastcgi_cache_dir }}'
   tags:
     - nginx
 
-- name: Remove default files
-  file: >
-    path={{ item }}
-    state=absent
-  with_items:
-    - '{{ nginx_config_dir }}/sites-enabled/default'
-    - '{{ nginx_config_dir }}/sites-available/default'
-    - '/var/www/index.html'
-    - '/var/www/html'
-  when: ansible_os_family == 'Debian'
-  tags:
-    - nginx
+- name: Generate Diffie-Hellman bits used for Perfect Forward Secrecy
+  shell: "umask 077 && openssl dhparam -out {{ nginx_config_dir }}/ssl/{{ nginx_ssl_dhparam | default('dh2048.pem') }} 2048"
+  args:
+    creates: "{{ nginx_config_dir }}/ssl/{{ nginx_ssl_dhparam | default('dh2048.pem') }}"
 
-- name: Write main configuration templates
+- name: Write configuration templates
   template: >
-    src={{ item.src }}
-    dest={{ item.dest }}
+    src=nginx.conf.j2
+    dest="{{ nginx_config_dir }}/nginx.conf"
     mode=0644 owner=root group=root
     backup=yes
-  with_items:
-      - { src: 'nginx-conf.j2',               dest: '{{ nginx_config_dir }}/nginx.conf' }
-      - { src: 'fastcgi_params.j2',           dest: '{{ nginx_config_dir }}/fastcgi_params' }
-      - { src: 'conf-d-drop-conf.j2',         dest: '{{ nginx_config_dir }}/conf.d/drop.conf' }
-      - { src: 'conf-d-assets-conf.j2',       dest: '{{ nginx_config_dir }}/conf.d/assets.conf' }
   notify:
     - restart nginx
   tags:
     - nginx
 
-- name: Write vhost configuration templates
-  template: >
-    src={% if item['server']['platform'] is defined %}platform-conf.j2{% else %}vhost-conf.j2{% endif %}
-    dest={{ nginx_config_dir }}/sites-available/{{ item['server']['server_name']|replace('.', '-') }}.conf
-    mode=0644 owner=root group=root
-    backup=yes
-  with_items: "{{nginx_vhosts}}"
-  when: nginx_vhosts is defined and nginx_vhosts|lower != 'none'
-  notify:
-    - reload nginx
-  tags:
-    - nginx
-
-- name: Ensure proper vhost directories exist
-  file: >
-    path=/var/www/{{ item['server']['application_name'] }}{% if item['server']['is_staging'] == false %}/production{% else %}/staging{% endif %}
-    state=directory
-    mode=0755 owner={{ deploy_user }} group={{ deploy_user }}
-  with_items: "{{nginx_vhosts}}"
-  when: nginx_vhosts is defined and nginx_vhosts|lower != 'none'
-  notify:
-    - reload nginx
-  tags:
-    - nginx
-
-- name: Write log rotation template
-  template: >
-    src=logrotate-d-nginx.j2
-    dest=/etc/logrotate.d/nginx
-    mode=0644 owner=root group=root
-    backup=yes
-  tags:
-    - nginx
-
-# - name: Enable platform cron job
-#   cron: >
-#     name="Run Magento tasks"
-#     minute="*/6"
-#     job="/usr/bin/php /var/www/{{ item['server']['application_name'] }}/production/current/cron.php"
-#   with_items: "{{nginx_vhosts}}"
-#   when: >
-#     when: nginx_vhosts is defined and nginx_vhosts|lower != 'none' and item['server']['is_staging']|bool == false and item['server']['platform'] is defined and item['server']['platform'] == 'magento'
-#   tags:
-#     - nginx
+- include: vhosts.yml
 
 - name: Create a basic auth users
   htpasswd: >
-    path={{ nginx_config_dir }}/.htpasswd
-    name={{ item['user']['name'] }}
+    path="{{ nginx_config_dir }}/.htpasswd"
+    name="{{ item['user']['name'] }}"
     password={{ item['user']['pass'] }}
     create=yes
     state=present
-    mode=0640 owner=root group={{ nginx_group }}
-  with_items: "{{nginx_htpasswd_users}}"
-  when: nginx_htpasswd_users is defined and nginx_htpasswd_users|lower != 'none'
+    mode=0640 owner=root group={{ nginx_user }}
+  with_items: "{{ nginx_htpasswd_users }}"
+  when: nginx_htpasswd_users|length > 0
   tags:
     - nginx
 
-- name: Start on server boot
+- name: Start Nginx on server boot
   service: >
-    name={{ nginx_service }}
+    name="{{ nginx_service }}"
     state=started
     enabled=yes
   tags:

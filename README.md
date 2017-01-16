@@ -1,12 +1,12 @@
-# Nginx
+# Nginx Role for Ansible
 
-This role installs (Nginx)[http://nginx.org/] which is an HTTP and reverse proxy
-server, as well as a mail proxy server.
+[![Build Status](https://travis-ci.org/petemcw/ansible-role-nginx.svg?branch=master)](https://travis-ci.org/petemcw/ansible-role-nginx)
+
+This role installs (NGINX)[http://nginx.org/] which is a free, open-source, high-performance HTTP server and reverse proxy, as well as an IMAP/POP3 proxy server. NGINX is known for its high performance, stability, rich feature set, simple configuration, and low resource consumption.
 
 ## Requirements
 
-This role requires [Ansible](http://www.ansibleworks.com/) version 1.4 or higher
-and the Debian/Ubuntu platform.
+This role requires [Ansible](http://www.ansibleworks.com/) version 2.0 or higher and the Debian/Ubuntu/CentOS/RedHat platforms.
 
 ## Role Variables
 
@@ -14,73 +14,124 @@ The variables that can be passed to this role and a brief description about
 them are as follows (additional variables are available in the source):
 
 ```yaml
-# Adds the specified charset to the “Content-Type” response header field.
-nginx_utf8: true
 
-# Defines a file that will store the process ID of the main process.
-nginx_pid: '/var/run/nginx.pid'
+# For Ubuntu only, specifies installing from PPA and version
+nginx_ppa_use: false
+nginx_ppa_version: "stable"
 
+# Remove unnecessary files
+nginx_remove_apache: true
+nginx_remove_default_files: true
+
+nginx_error_log: "/var/log/nginx/error.log warn"
+nginx_access_log: "/var/log/nginx/access.log main buffer=16k"
+
+nginx_worker_processes: "{{ ansible_processor_vcpus | default(ansible_processor_count) }}"
 # Sets the maximum number of simultaneous connections that can be opened by a
 # worker process.
-nginx_worker_connections: 1024
+nginx_worker_connections: "1024"
+nginx_multi_accept: "off"
 
-# Sets the address and port for IP, or the path for a UNIX-domain socket on
-# which the server will accept requests.
-nginx_listen_port: 80
+# The server dictates the choice of cipher suites.
+nginx_ssl_prefer_server_ciphers: "on"
 
-# Sets the address and port for IP, or the path for a UNIX-domain socket on
-# which the server will accept requests.
-nginx_listen_port_secure: 443
+# Use only Perfect Forward Secrecy Ciphers. Fallback on non ECDH
+# for crufty clients.
+nginx_ssl_ciphers: "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"
 
-# The directives ssl_protocols and ssl_ciphers can be used to limit connections
-# to include only the strong versions and ciphers of SSL/TLS.
-nginx_ssl_protocols: 'SSLv3 TLSv1'
-nginx_ssl_ciphers: 'RC4:HIGH:!aNULL:!MD5'
+# No SSL2 support. Legacy support of SSLv3.
+nginx_ssl_protocols: "TLSv1 TLSv1.1 TLSv1.2"
 
-# Enables or disables gzipping of responses.
-nginx_gzip: true
+# Pregenerated Diffie-Hellman parameters.
+nginx_ssl_dhparam: "dh2048.pem"
 
-# Sets the minimum HTTP version of a request required to compress a response.
-nginx_gzip_http_version: '1.0'
+# Curve to use for ECDH.
+nginx_ssl_ecdh_curve: "secp384r1"
 
-# Enables gzipping of responses for the specified MIME types.
-nginx_gzip_types:
-    - 'text/plain'
-    - 'text/css'
-    - 'application/x-javascript'
+# Enable OCSP stapling. A better way to revocate server certificates.
+nginx_ssl_stapling: "on"
 
-# Disables gzipping of responses for requests with “User-Agent” header fields
-# matching any of the specified regular expressions.
-nginx_gzip_disable: 'MSIE [1-6].(?!.*SV1)'
+# Enable SSL cache
+nginx_ssl_cache_use: true
+nginx_ssl_session_cache: "shared:SSL:20m"
+nginx_ssl_session_timeout: "1d"
 
-# Any valid configuration parameter for ngx_http_core_module
-# http://nginx.org/en/docs/http/ngx_http_core_module.html
-nginx_http_params:
-  access_log: '/var/log/nginx/access.log main'
-  error_log:  '/var/log/nginx/error.log warn'
-  keepalive_timeout: 25
+# Basic Auth users & passwords
+nginx_htpasswd_users: []
 
-# Enables caching
-nginx_cache_enabled: false
-
-# Defines the address and other parameters of an upstream server.
-nginx_fastcgi_use_socket: true
-nginx_fastcgi_socket: '/var/run/php5-fpm.sock'
-nginx_fastcgi_listen_tcp: '127.0.0.1:9000'
-
-# Extensions that should be served as static assets
-nginx_asset_extensions:
-  - 'jpe?g'
-  - 'gif'
-  - 'png'
-  - 'ico'
-
-# Extensions that should be dropped
+# Bad extensions
 nginx_drop_extensions:
   - 'aspx'
   - 'asp'
   - 'jsp'
   - 'cgi'
+
+# Adds the specified charset to the “Content-Type” response header field.
+nginx_utf8_use: true
+
+# Enables GZIP compression
+nginx_gzip_use: true
+nginx_gzip_http_version: '1.1'
+# Enables gzipping of responses for the specified MIME types.
+nginx_gzip_types:
+  - 'text/plain'
+  - 'text/css'
+  - 'application/javascript'
+  - 'application/x-javascript'
+  - 'text/javascript'
+  - 'text/js'
+  - 'application/json'
+  - 'text/comma-separated-values'
+  - 'text/xml'
+  - 'application/xml'
+  - 'application/xml+rss'
+  - 'application/atom+xml'
+  - 'image/svg+xml'
+nginx_gzip_disable: 'msie6'
+
+# Example extra gzip options, printed inside the main server http config:
+nginx_extra_gzip_options: |
+  gzip_buffers     16 8k;
+  gzip_comp_level  6;
+  gzip_min_length  1024;
+  gzip_proxied     any;
+  gzip_static      on;
+  gzip_vary        on;
+
+# Example extra main options, used within the main Nginx's context:
+nginx_extra_conf_options: |
+  env VARIABLE;
+  include /etc/nginx/main.d/*.conf;
+
+# Example extra http options, printed inside the main server http config:
+nginx_extra_http_options: |
+  client_body_buffer_size '128k';
+  client_max_body_size '75m';
+  keepalive_requests 100;
+  keepalive_timeout 65;
+  merge_slashes 'on';
+  sendfile 'on';
+  server_name_in_redirect 'off';
+  server_names_hash_bucket_size 128;
+  server_tokens 'off';
+  tcp_nodelay 'on';
+  tcp_nopush 'on';
+  types_hash_max_size 2048;
+  underscores_in_headers 'on';
+
+# Virtual Hosts configuration
+nginx_vhosts: []
+
+# Example upstream below
+nginx_upstreams:
+  - name: myapp1
+    strategy: "ip_hash" # "least_conn", etc.
+    keepalive: 16 # optional
+    servers: {
+      "srv1.example.com",
+      "srv2.example.com weight=3",
+      "srv3.example.com"
+    }
 ```
 
 ### Basic Auth Configuration
@@ -99,38 +150,28 @@ nginx_htpasswd_users:
 ### Virtual Host Structure
 
 ```yaml
-# The list of user accounts to be added to the system
 nginx_vhosts:
-  - server:
-    platform:
-      - name: 'magento'             # Currently supported: magento, drupal, wordpress, cmsms
-      - name: 'wordpress'
-        subdir: 'blog/'             # If defined, attempts to write correct location blocks
-    magento_run_type: 'store'       # Currently supported: website, store
-    magento_run_code: 'base'        # User generated website/store code
-    magento_developer_mode: true    # Enable Magento development features
+  - vhost:
     server_name: 'www.example.com'  # Used to determine which server block is used for a given request
-    application_name: 'example.com' # Used to create correct file system path and virtual host file
-    listen_port: 80
-    listen_port_secure: 443
+    root: '/var/www/example.com/production/current/'
+    index: 'index.php'
+    listen: 80
+    listen_secure: 443
     is_staging: false               # Enables error reporting in some cases
     is_protected: false             # Enables Basic Auth protection
-    is_ssl: true                    # Enables SSL server block
-    redirect_urls:                  # Used to generate redirection blocks for alternate domains
+    is_secure: true                 # Enables SSL
+    redirect_uris:                  # Used to generate redirection blocks for alternate domains
       - 'example.net'
       - 'www.example.net'
     rewrites:                       # Used to create URL redirects
       - origin: 'www.example.com/old-page.html'
         destination: 'www.example.com/contact-us'
-  - server:
-    platform:
-      - name: 'drupal'
+  - vhost:
     server_name: 'example.io'
-    application_name: 'example.io'
     is_staging: true
     is_protected: true
-    is_ssl: false
-    redirect_urls:
+    is_secure: false
+    redirect_uris:
       - 'www.example.io'
     # By specifying locationX entries, you can create arbitrary blocks
     location1: {name: /foo/, try_files: "$uri $uri/ /index.html"}
@@ -139,65 +180,66 @@ nginx_vhosts:
 
 ## Examples
 
-1) Install Nginx with HTTP directives of choice, but with no vhosts configured:
+1) Install Nginx with HTTP directives of choice, but with no virtual host configured:
 
 ```yaml
     ---
     # This playbook installs Nginx
 
-    - name: Apply Nginx to all web nodes
-      hosts: web_nodes
+    - name: Install Nginx to all nodes
+      hosts: all
       roles:
         - { role: nginx,
-            access_log: "/var/log/nginx/access.log",
-            nginx_vhosts: none
+            nginx_access_log: "/var/log/nginx/access.log",
+            nginx_vhosts: []
           }
 ```
 
 *Note: Please make sure the HTTP directives passed are valid, as this role won't check for the validity of the directives. See the [nginx documentation](http://nginx.org/en/docs/) for details.*
 
-2) Install Nginx and configure a vhost:
+2) Install Nginx and configure a virtual host:
 
 ```yaml
     ---
     # This playbook installs Nginx
 
-    - name: Apply Nginx to all web nodes
-      hosts: web_nodes
+    - name: Install Nginx to all nodes
+      hosts: all
       roles:
         - { role: nginx,
-            nginx_http_params: { keepalive_timeout: 15 },
+            nginx_gzip_use: false,
+            nginx_extra_http_options: "keepalive_timeout 15",
+            nginx_upstreams:
+              - name: phpfpm
+                servers: { 127.0.0.1:9000 }
             nginx_vhosts:
-                - server:
-                  platform:
-                    - name: 'magento'
-                  magento_run_type: 'store'
-                  magento_run_code: 'base'
-                  server_name: 'www.augustash.com'
-                  application_name: 'augustash.com'
-                  listen_port: 80
-                  is_staging: false
-                  is_protected: false
-                  is_ssl: false
-                  redirect_urls:
-                    - 'augustash.com'
-                    - 'augustash.net'
-                    - 'www.augustash.net'
-                  rewrites:
-                    - origin: 'www.augustash.com/old-page.html'
-                      destination: 'www.augustash.com/contact-us'
-                  location1: {name: /foo/, try_files: "$uri $uri/ /index.html"}
-                  location2: {name: /bar/, try_files: "$uri $uri/ /index.html"}
+              - vhost:
+                hostname: 'augustash.com'
+                server_name: 'www.augustash.com'
+                root: '/var/www/augustash.com/production/current/'
+                index: 'index.php'
+                is_staging: false
+                is_protected: false
+                is_secure: true
+                listen: 80
+                listen_secure: 443
+                redirect_uris:
+                  - 'augustash.com'
+                rewrites:
+                  - origin: 'www.augustash.org'
+                    destination: 'www.augustash.com/non-profits'
+                location1: 
+                  - name: /foo/
+                    try_files: "$uri $uri/ /index.html"
+                location2: 
+                  - name: /bar/
+                    try_files: "$uri $uri/ /index.html"
           }
 ```
 
 ## Dependencies
 
-The following packages may be required for Debian derivatives:
-
-- `aptitude`
-- `python-apt`
-- `python-passlib`
+None.
 
 ## License
 

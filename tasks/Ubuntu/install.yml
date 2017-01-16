@@ -1,0 +1,21 @@
+---
+# Defines tasks for Ubuntu installation
+
+- name: Add PPA for Nginx
+  apt_repository: >
+    repo="ppa:nginx/{{ nginx_ppa_version }}"
+    state=present
+    update_cache=yes
+  register: nginx_ppa_added
+  when: nginx_ppa_use
+  tags:
+    - nginx
+
+- name: Ensure Nginx will reinstall if PPA was just added
+  apt: >
+    name="{{ item }}"
+    state=absent
+  with_items: "{{ nginx_packages }}"
+  when: nginx_ppa_added.changed
+  tags:
+    - nginx
