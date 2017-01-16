@@ -11,7 +11,7 @@
     pkg={{ item }}
     state=absent
     purge=yes
-  with_items: apache_packages
+  with_items: "{{apache_packages}}"
   when: ansible_os_family == 'Debian'
   tags:
     - nginx
@@ -28,7 +28,7 @@
     pkg={{ item }}
     update_cache=yes
     state=latest
-  with_items: nginx_packages
+  with_items: "{{nginx_packages}}"
   when: ansible_os_family == 'Debian'
   tags:
     - nginx
@@ -82,7 +82,7 @@
     dest={{ nginx_config_dir }}/sites-available/{{ item['server']['server_name']|replace('.', '-') }}.conf
     mode=0644 owner=root group=root
     backup=yes
-  with_items: nginx_vhosts
+  with_items: "{{nginx_vhosts}}"
   when: nginx_vhosts is defined and nginx_vhosts|lower != 'none'
   notify:
     - reload nginx
@@ -94,7 +94,7 @@
     path=/var/www/{{ item['server']['application_name'] }}{% if item['server']['is_staging'] == false %}/production{% else %}/staging{% endif %}
     state=directory
     mode=0755 owner={{ deploy_user }} group={{ deploy_user }}
-  with_items: nginx_vhosts
+  with_items: "{{nginx_vhosts}}"
   when: nginx_vhosts is defined and nginx_vhosts|lower != 'none'
   notify:
     - reload nginx
@@ -115,7 +115,7 @@
 #     name="Run Magento tasks"
 #     minute="*/6"
 #     job="/usr/bin/php /var/www/{{ item['server']['application_name'] }}/production/current/cron.php"
-#   with_items: nginx_vhosts
+#   with_items: "{{nginx_vhosts}}"
 #   when: >
 #     when: nginx_vhosts is defined and nginx_vhosts|lower != 'none' and item['server']['is_staging']|bool == false and item['server']['platform'] is defined and item['server']['platform'] == 'magento'
 #   tags:
@@ -129,7 +129,7 @@
     create=yes
     state=present
     mode=0640 owner=root group={{ nginx_group }}
-  with_items: nginx_htpasswd_users
+  with_items: "{{nginx_htpasswd_users}}"
   when: nginx_htpasswd_users is defined and nginx_htpasswd_users|lower != 'none'
   tags:
     - nginx

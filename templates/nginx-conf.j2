@@ -12,6 +12,9 @@ worker_processes 4;
 worker_processes {{ ansible_processor_cores }};
 {% endif %}
 pid {{ nginx_pid }};
+{% if ansible_distribution == "Ubuntu" and ansible_distribution_major_version == "16" %}
+include /etc/nginx/modules-enabled/*.conf;
+{% endif %}
 
 #----------------------------------------------------------------------
 # http://wiki.nginx.org/NginxEventsModule
@@ -62,13 +65,6 @@ http {
 {% for k,v in nginx_http_params.iteritems() %}
     {{ k }} {{ v }};
 {% endfor %}
-
-    # GeoIP support is included in the Ubuntu 12.04 Nginx.
-    # This enables logging, and the following:
-    #    if ($geoip_country_code ~ (CN|ZW) ) {
-    #      return 403;
-    #    }
-    #geoip_country /usr/share/GeoIP/GeoIP.dat;
 
 {% if nginx_cache_enabled|bool == true %}
     # caching

@@ -192,14 +192,6 @@
         rewrite / /{{ location_dir }}index.php?$args;
     }
 
-
-
-
-
-
-
-
-
     # The downloader has its own index.php that needs to be used
     location ~* ^(/{{ location_dir }}downloader)(.*) {
         try_files $uri $uri/ /{{ location_dir }}downloader/index.php$1;
