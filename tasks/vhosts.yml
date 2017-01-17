@@ -1,0 +1,38 @@
+---
+# Defines vhost tasks for Nginx
+
+- name: Ensure virtual host paths exist
+  file: >
+    path="{{ item }}"
+    state=directory
+    mode=0755 owner=root group=root
+  with_items:
+    - "{{ nginx_config_dir }}/sites-available"
+    - "{{ nginx_config_dir }}/sites-enabled"
+  notify:
+    - reload nginx
+  tags:
+    - nginx
+
+- name: Ensure managed vhost paths exist
+  file: >
+    path="{{ item['root'] | default('/var/www/') }}"
+    state=directory
+    mode=0755
+  with_items: "{{ nginx_vhosts }}"
+  when: nginx_vhosts|length > 0
+  tags:
+    - nginx
+
+- name: Write managed vhost configuration templates
+  template: >
+    src=vhost.conf.j2
+    dest="{{ nginx_config_dir }}/sites-available/{{ item['server_name']|replace('.', '-') }}.conf"
+    mode=0644 owner=root group=root
+    backup=yes
+  with_items: "{{ nginx_vhosts }}"
+  when: nginx_vhosts|length > 0
+  notify:
+    - reload nginx
+  tags:
+    - nginx

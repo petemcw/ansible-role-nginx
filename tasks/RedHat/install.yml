@@ -1,0 +1,28 @@
+---
+# Defines tasks for RedHat/CentOS installation
+
+- name: Enable Nginx repository
+  template: >
+    src=nginx.repo.j2
+    dest=/etc/yum.repos.d/nginx.repo
+    mode=0644 owner=root group=root
+  tags:
+    - nginx
+
+- name: Remove Apache packages
+  yum: >
+    name="{{ item }}"
+    state=absent
+  with_items: "{{apache_packages}}"
+  when: nginx_remove_apache
+  tags:
+    - nginx
+
+- name: Install packages
+  yum: >
+    name="{{ item }}"
+    state=latest
+    enablerepo=nginx
+  with_items: "{{ nginx_packages }}"
+  tags:
+    - nginx

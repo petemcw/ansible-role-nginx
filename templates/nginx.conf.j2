@@ -1,0 +1,130 @@
+# This file is under control by Ansible for {{inventory_hostname}}
+# DO NOT MODIFY by hand; update the role called: {{ role_path | basename }}
+
+user {{ nginx_user }};
+pid {{ nginx_pid }};
+error_log {{ nginx_error_log }};
+
+worker_processes {{ nginx_worker_processes }};
+#
+# CentOS 7 has /etc/nginx/modules
+#
+{% if ansible_distribution == "Ubuntu" and ansible_distribution_major_version == "16" %}
+
+include {{ nginx_config_dir }}/modules-enabled/*.conf;
+{% endif %}
+
+events {
+    worker_connections {{ nginx_worker_connections }};
+    multi_accept {{ nginx_multi_accept }};
+}
+{% if nginx_extra_conf_options %}
+
+{{ nginx_extra_conf_options }}
+{% endif %}
+
+http {
+    include {{ nginx_config_dir }}/mime.types;
+    default_type application/octet-stream;
+
+    log_format main  '$remote_addr - $remote_user [$time_local] $request '
+                     '"$status" $body_bytes_sent "$http_referer" '
+                     '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  {{ nginx_access_log }};
+{% if nginx_utf8_use|bool == true %}
+
+    charset utf-8;
+{% endif %}
+
+    # compression
+{% if nginx_gzip_use|bool == true %}
+    gzip on;
+    gzip_http_version {{ nginx_gzip_http_version }};
+    gzip_disable "{{ nginx_gzip_disable }}";
+    gzip_types
+{% for type in nginx_gzip_types %}
+        {{ type }}{% if loop.last == true %};{% endif %}
+
+{% endfor %}
+{% if nginx_extra_gzip_options %}
+    {{ nginx_extra_gzip_options|indent(4, False) }}
+{% endif %}
+{% else %}
+    gzip off;
+{% endif %}
+
+{% if nginx_extra_http_options %}
+    {{ nginx_extra_http_options|indent(4, False) }}
+{% endif %}
+
+    # detect https
+    map $scheme $fastcgi_https {
+        default "";
+        https on;
+    }
+
+    # Support the X-Forwarded-Proto header for FastCGI.
+    map $http_x_forwarded_proto $fastcgi_https {
+        default $https;
+        http '';
+        https on;
+    }
+{% if nginx_ssl_cache_use|bool == true %}
+
+    # Use a SSL/TLS cache for SSL session resume. This needs to be
+    # here (in this context, for session resumption to work. See this
+    # thread on the Nginx mailing list:
+    # http://nginx.org/pipermail/nginx/2010-November/023736.html.
+    ssl_session_cache {{ nginx_ssl_session_cache }};
+    ssl_session_timeout {{ nginx_ssl_session_timeout }};
+{% endif %}
+
+    # The server dictates the choice of cipher suites.
+    ssl_prefer_server_ciphers {{ nginx_ssl_prefer_server_ciphers }};
+
+    # Use only Perfect Forward Secrecy Ciphers. Fallback on non ECDH
+    # for crufty clients.
+    ssl_ciphers {{ nginx_ssl_ciphers }};
+
+    # No SSL2 support. Legacy support of SSLv3.
+    ssl_protocols {{ nginx_ssl_protocols }};
+
+    # Pregenerated Diffie-Hellman parameters.
+    ssl_dhparam {{ nginx_config_dir }}/ssl/{{ nginx_ssl_dhparam }};
+
+    # Curve to use for ECDH.
+    ssl_ecdh_curve {{ nginx_ssl_ecdh_curve }};
+
+    # Enable OCSP stapling. A better way to revocate server certificates.
+    ssl_stapling {{ nginx_ssl_stapling }};
+
+    # detect whether a request comes from a human, a search crawler or another bot.
+    map $http_user_agent $is_non_search_bot {
+        default '';
+        ~*(google|bing|pingdom|monitis.com|Zend_Http_Client) '';
+        ~*(http|crawler|spider|bot|search|ForusP|Wget/|Python-urllib|PHPCrawl|bGenius) 'bot';
+    }
+
+    # rate limit bots (that are not search spiders) to one PHP request per second.
+    # An empty '$limit_bots' would disable rate limiting for this request
+    limit_req_zone $is_non_search_bot zone=bots:1m rate=1r/s;
+    limit_req_log_level error;
+
+{% for upstream in nginx_upstreams %}
+    upstream {{ upstream.name }} {
+{% if upstream.strategy is defined %}
+        {{ upstream.strategy }};
+{% endif %}
+{% for server in upstream.servers %}
+        server {{ server }};
+{% endfor %}
+{% if upstream.keepalive is defined %}
+        keepalive {{ upstream.keepalive }};
+{% endif %}
+    }
+{% endfor %}
+
+    # include active sites
+    include {{ nginx_config_dir }}/sites-enabled/*;
+}

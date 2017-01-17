@@ -1,0 +1,20 @@
+---
+- name: Install Nginx to all nodes
+  hosts: all
+  vars:
+    nginx_ppa_use: true
+    nginx_vhosts:
+      - vhost:
+        hostname: 'augustash.com'
+        server_name: 'www.augustash.com'
+        root: '/var/www/augustash.com/production/current/'
+        index: 'index.php'
+        is_staging: false
+        is_protected: false
+        is_secure: true
+        listen: 80
+        listen_secure: 443
+        redirect_uris:
+          - 'augustash.com'
+  roles:
+    - test_role

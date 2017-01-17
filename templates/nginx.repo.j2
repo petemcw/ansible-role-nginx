@@ -1,0 +1,7 @@
+# This file is under control by Ansible for {{inventory_hostname}}
+# DO NOT MODIFY by hand; update the role called: {{ role_path | basename }}
+[nginx]
+name=nginx repo
+baseurl=http://nginx.org/packages/centos/{{ ansible_distribution_major_version }}/$basearch/
+gpgcheck=0
+enabled=1
