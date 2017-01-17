@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/petemcw/ansible-role-nginx.svg?branch=master)](https://travis-ci.org/petemcw/ansible-role-nginx)
 
-This role installs (NGINX)[http://nginx.org/] which is a free, open-source, high-performance HTTP server and reverse proxy, as well as an IMAP/POP3 proxy server. NGINX is known for its high performance, stability, rich feature set, simple configuration, and low resource consumption.
+This role installs [NGINX](http://nginx.org/) which is a free, open-source, high-performance HTTP server and reverse proxy, as well as an IMAP/POP3 proxy server. NGINX is known for its high performance, stability, rich feature set, simple configuration, and low resource consumption.
 
 ## Requirements
 
