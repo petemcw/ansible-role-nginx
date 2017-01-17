@@ -62,12 +62,6 @@ script:
     && (echo 'Run test: pass' && exit 0)
     || (echo 'Run test: fail' && exit 1)
 
-  - >
-    docker exec --tty "$(cat ${container_id})" ps waux
-    | grep nginx | wc -l | grep -q '4'
-    && (echo 'Run test: pass' && exit 0)
-    || (echo 'Run test: fail' && exit 1)
-
 # Notify Ansible Galaxy when a role builds successfully.
 notifications:
   email: false
